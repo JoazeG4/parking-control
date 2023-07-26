@@ -7,6 +7,7 @@ import org.hibernate.validator.constraints.br.CPF;
 import java.io.Serial;
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.util.Set;
 import java.util.UUID;
 
 @Entity
@@ -33,6 +34,6 @@ public class User implements Serializable {
     @Column(nullable = false)
     private LocalDateTime updateDate;
 
-    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
-    private ParkingSpot parkingSpot;
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    private Set<ParkingSpot> parkingSpots;
 }

@@ -1,7 +1,5 @@
 package com.api.parkingcontrol.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -33,8 +31,7 @@ public class Car implements Serializable {
     @Column(nullable = false)
     private LocalDateTime updateDate;
 
-    @OneToOne
-    @JsonIgnore
+    @ManyToOne
     @JoinColumn(name = "parkingSpot_id")
     private ParkingSpot parkingSpot;
 }

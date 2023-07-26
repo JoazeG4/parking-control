@@ -3,9 +3,14 @@ package com.api.parkingcontrol.service;
 import com.api.parkingcontrol.dtos.ParkingSpotDto;
 import com.api.parkingcontrol.model.ParkingSpot;
 import com.api.parkingcontrol.repository.ParkingSpotRepository;
+import com.api.parkingcontrol.service.exceptions.EntityBadRequestException;
+import com.api.parkingcontrol.service.exceptions.EntityConflitException;
+import com.api.parkingcontrol.service.exceptions.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import org.springframework.beans.BeanUtils;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -18,61 +23,55 @@ public class ParkingSpotService {
     private ParkingSpotRepository parkingSpotRepository;
 
     @Transactional
-    public Object save(ParkingSpotDto parkingSpotDto) throws Exception {
+    public ParkingSpot save(ParkingSpotDto parkingSpotDto) throws EntityConflitException {
         ParkingSpot parkingSpot = new ParkingSpot();
         BeanUtils.copyProperties(parkingSpotDto, parkingSpot);
         parkingSpot.setUpdateDate(LocalDateTime.now());
         parkingSpot.setRegistrationDate(LocalDateTime.now());
 
         if(parkingSpotRepository.existsByApartmentAndBlock(parkingSpot.getApartment(), parkingSpot.getBlock())) {
-            throw new Exception("Parking Spot Car already registered for this apartment/block.");
+            throw new EntityConflitException("Parking Spot Car already registered for this apartment/block.");
         }
         return parkingSpotRepository.save(parkingSpot);
     }
 
-    public Object update(UUID id, ParkingSpotDto parkingSpotDto) throws Exception {
-        ParkingSpot parkingSpot = new ParkingSpot();
-        BeanUtils.copyProperties(parkingSpotDto, parkingSpot);
+    public ParkingSpot update(UUID id, ParkingSpotDto parkingSpotDto) throws EntityNotFoundException {
+        var idCurrent = Optional.of(parkingSpotRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Parking spot not found.")));
+        var apartment = parkingSpotRepository.findByApartment(parkingSpotDto.getApartment());
 
-        var idCurrent = parkingSpotRepository.findById(id);
-        var apartment = parkingSpotRepository.findByApartment(parkingSpot.getApartment());
-
-        if(idCurrent.isPresent()) {
-            if(Objects.equals(idCurrent.get().getApartment(), parkingSpot.getApartment()) || apartment.isEmpty()){
-                parkingSpot.setId(id);
-                parkingSpot.setUpdateDate(LocalDateTime.now());
-                parkingSpot.setRegistrationDate(idCurrent.get().getRegistrationDate());
-                return parkingSpotRepository.save(parkingSpot);
-            }
-            throw new Exception("Parking spot number is already in use.");
+        if(Objects.equals(idCurrent.get().getApartment(), parkingSpotDto.getApartment()) || apartment.isEmpty()){
+            ParkingSpot parkingSpot = new ParkingSpot();
+            BeanUtils.copyProperties(parkingSpotDto, parkingSpot);
+            parkingSpot.setId(id);
+            parkingSpot.setUpdateDate(LocalDateTime.now());
+            parkingSpot.setRegistrationDate(idCurrent.get().getRegistrationDate());
+            return parkingSpotRepository.save(parkingSpot);
         }
-        throw new Exception("Apartment is already in use.");
+        throw new EntityConflitException("Apartment is already in use.");
     }
 
-    public List<ParkingSpot> findAll() throws Exception {
+    public Page<ParkingSpot> findAll(Pageable pageable) throws EntityBadRequestException {
         if(parkingSpotRepository.findAll().isEmpty()) {
-            throw new Exception("Empty parking lot.");
+            throw new EntityBadRequestException("Empty parking lot.");
         }
-        return parkingSpotRepository.findAll();
+        return parkingSpotRepository.findAll(pageable);
     }
 
-    public Object findById(UUID id) throws Exception {
-        if (parkingSpotRepository.findById(id).isEmpty()) {
-            throw new Exception("Parking Spot not found.");
-        }
-        return parkingSpotRepository.findById(id).get();
+    public ParkingSpot findById(UUID id) throws EntityNotFoundException {
+        return parkingSpotRepository.findById(id).orElseThrow(
+                () -> new EntityNotFoundException("Parking Spot not found."));
     }
 
-    public Object deleteAll() throws Exception{
-        if(parkingSpotRepository.findAll().isEmpty()) {
-            throw new Exception("Empty parking lot.");
+    public void deleteAll() throws EntityBadRequestException {
+        if(parkingSpotRepository.findAll().isEmpty()){
+            throw new EntityBadRequestException("Empty parking lot.");
         }
         parkingSpotRepository.deleteAll();
-        return null;
     }
 
-    public void deleteById(UUID id) throws Exception {
-        parkingSpotRepository.findById(id).orElseThrow(() -> new Exception("Parking Spot not found."));
+    @Transactional
+    public void deleteById(UUID id) throws EntityNotFoundException {
+        parkingSpotRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Parking Spot not found."));
         parkingSpotRepository.deleteById(id);
     }
 }

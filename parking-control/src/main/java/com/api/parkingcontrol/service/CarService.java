@@ -3,14 +3,17 @@ package com.api.parkingcontrol.service;
 import com.api.parkingcontrol.dtos.CarDto;
 import com.api.parkingcontrol.model.Car;
 import com.api.parkingcontrol.repository.CarRepository;
+import com.api.parkingcontrol.service.exceptions.EntityBadRequestException;
+import com.api.parkingcontrol.service.exceptions.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import org.springframework.beans.BeanUtils;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -20,7 +23,7 @@ public class CarService {
     final CarRepository carRepository;
 
     @Transactional
-    public Object save(CarDto carDto){
+    public Car save(CarDto carDto){
         Car car = new Car();
         BeanUtils.copyProperties(carDto, car);
         car.setRegistrationDate(LocalDateTime.now());
@@ -28,44 +31,50 @@ public class CarService {
         return carRepository.save(car);
     }
 
-    public Object update(UUID id, CarDto carDto) throws Exception {
+    public Car update(UUID id, CarDto carDto) throws EntityNotFoundException {
+        var idCurrent = Optional.of(carRepository.findById(id).orElseThrow
+                (() -> new EntityNotFoundException("Car not found.")));
+
         Car car = new Car();
         BeanUtils.copyProperties(carDto, car);
-
-        var idCurrent = carRepository.findById(id);
-
-        if(idCurrent.isPresent()) {
-            car.setId(id);
-            car.setUpdateDate(LocalDateTime.now());
-            car.setRegistrationDate(idCurrent.get().getRegistrationDate());
-            return carRepository.save(car);
-        }
-        throw new Exception("Car already in use.");
+        car.setId(id);
+        car.setUpdateDate(LocalDateTime.now());
+        car.setRegistrationDate(idCurrent.get().getRegistrationDate());
+        return carRepository.save(car);
     }
 
-    public List<Car> findAll() throws Exception {
+    public Page<Car> findAll(Pageable pageable) throws EntityBadRequestException {
         if(carRepository.findAll().isEmpty()) {
-            throw new Exception("There are no registered cars.");
+            throw new EntityBadRequestException("There are no registered cars.");
         }
-        return carRepository.findAll();
+        return carRepository.findAll(pageable);
     }
 
-    public Object findById(UUID id) throws Exception {
-        if (carRepository.findById(id).isEmpty()) {
-            throw new Exception("Car not found.");
-        }
-        return carRepository.findById(id).get();
+    public Car findById(UUID id) throws EntityNotFoundException {
+        return carRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Car not found."));
     }
 
-    public void deleteAll() throws Exception{
+    public Car findByLicensePlateCar(String licensePlateCar) throws EntityNotFoundException {
+        return carRepository.findByLicensePlateCar(licensePlateCar).
+                orElseThrow(() -> new EntityNotFoundException("Car not found."));
+    }
+
+    public void deleteAll() throws EntityBadRequestException{
         if(carRepository.findAll().isEmpty()) {
-            throw new Exception("There are no registered cars.");
+            throw new EntityBadRequestException("There are no registered cars.");
         }
         carRepository.deleteAll();
     }
 
-    public void deleteById(UUID id) throws Exception {
-        carRepository.findById(id).orElseThrow(() -> new Exception("Car not found."));
+    @Transactional
+    public void deleteById(UUID id) throws EntityNotFoundException {
+        carRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Car not found."));
         carRepository.deleteById(id);
+    }
+
+    @Transactional
+    public void deleteByLicensePlateCar(String licensePlateCar) throws EntityNotFoundException {
+        carRepository.findByLicensePlateCar(licensePlateCar).orElseThrow(() -> new EntityNotFoundException("Car not found."));
+        carRepository.deleteByLicensePlateCar(licensePlateCar);
     }
 }

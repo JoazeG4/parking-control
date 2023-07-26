@@ -5,12 +5,14 @@ import com.api.parkingcontrol.model.Car;
 import com.api.parkingcontrol.service.CarService;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Collections;
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -21,64 +23,48 @@ public class CarController {
     final CarService carService;
 
     @PostMapping
-    public ResponseEntity<Object> saveCar(@RequestBody @Valid CarDto carDto){
-        try{
-            return ResponseEntity.status(HttpStatus.CREATED).body(carService.save(carDto));
-        }catch (Exception e){
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
-        }
+    public ResponseEntity<Car> saveCar(@RequestBody @Valid CarDto carDto){
+        return ResponseEntity.status(HttpStatus.CREATED).body(carService.save(carDto));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Object> updateCar(@PathVariable UUID id, @RequestBody @Valid CarDto carDto){
-        try{
-            return ResponseEntity.status(HttpStatus.OK).body(carService.update(id, carDto));
-        }catch (Exception e){
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
-        }
+    public ResponseEntity<Car> updateCar(@PathVariable UUID id, @RequestBody @Valid CarDto carDto){
+        return ResponseEntity.status(HttpStatus.OK).body(carService.update(id, carDto));
     }
 
     @GetMapping
-    public ResponseEntity<List<Object>> getAllCar(){
-        try{
-            return ResponseEntity.status(HttpStatus.OK).body(Collections.singletonList(carService.findAll()));
-        }catch (Exception e){
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Collections.singletonList(e.getMessage()));
-        }
+    public ResponseEntity<Page<Car>> getAllCar(@PageableDefault(page = 0,
+            size = 10, sort = "id", direction = Sort.Direction.ASC) Pageable pageable){
+        return ResponseEntity.status(HttpStatus.OK).body(carService.findAll(pageable));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Object> getOneCar(@PathVariable UUID id){
-        try{
-            return ResponseEntity.status(HttpStatus.OK).body(carService.findById(id));
-        }catch (Exception e){
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
-        }
+    public ResponseEntity<Car> getOneCar(@PathVariable UUID id){
+        return ResponseEntity.status(HttpStatus.OK).body(carService.findById(id));
+    }
+
+    @GetMapping("licensePlateCar/{licensePlateCar}")
+    public ResponseEntity<Car> getOneLicensePlateCar(@PathVariable String licensePlateCar){
+        return ResponseEntity.status(HttpStatus.OK).body(carService.findByLicensePlateCar(licensePlateCar));
     }
 
     @DeleteMapping
     public ResponseEntity<Object> deleteAllCar(){
-        try{
-            carService.deleteAll();
-            return ResponseEntity.status(HttpStatus.OK).body("Cars deleted successfully.");
-        }catch (Exception e){
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
-        }
+        carService.deleteAll();
+        return ResponseEntity.status(HttpStatus.OK).body("Cars deleted successfully.");
     }
 
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/{Id}")
     public ResponseEntity<Object> deleteOneCar(@PathVariable UUID id){
-        try{
-            carService.deleteById(id);
-            return ResponseEntity.status(HttpStatus.OK).body("Car deleted successfully.");
-        }catch (Exception e){
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
-        }
+        carService.deleteById(id);
+        return ResponseEntity.status(HttpStatus.OK).body("Car deleted successfully.");
     }
+
+    @DeleteMapping("licensePlateCar/{licensePlateCar}")
+    public ResponseEntity<Object> deleteLicensePlateCar(@PathVariable String licensePlateCar){
+        carService.deleteByLicensePlateCar(licensePlateCar);
+        return ResponseEntity.status(HttpStatus.OK).body("Car deleted successfully.");
+    }
+
+
 }
