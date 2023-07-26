@@ -65,6 +65,4 @@ public class CarController {
         carService.deleteByLicensePlateCar(licensePlateCar);
         return ResponseEntity.status(HttpStatus.OK).body("Car deleted successfully.");
     }
-
-
 }
