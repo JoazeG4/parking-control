@@ -37,17 +37,18 @@ public class ParkingSpotService {
 
     public ParkingSpot update(UUID id, ParkingSpotDto parkingSpotDto) throws EntityNotFoundException {
         var idCurrent = Optional.of(parkingSpotRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Parking spot not found.")));
-        var apartment = parkingSpotRepository.findByApartment(parkingSpotDto.getApartment());
 
-        if(Objects.equals(idCurrent.get().getApartment(), parkingSpotDto.getApartment()) || apartment.isEmpty()){
-            ParkingSpot parkingSpot = new ParkingSpot();
-            BeanUtils.copyProperties(parkingSpotDto, parkingSpot);
-            parkingSpot.setId(id);
-            parkingSpot.setUpdateDate(LocalDateTime.now());
-            parkingSpot.setRegistrationDate(idCurrent.get().getRegistrationDate());
-            return parkingSpotRepository.save(parkingSpot);
+        if (!Objects.equals(idCurrent.get().getApartment(), parkingSpotDto.getApartment()) || !Objects.equals(idCurrent.get().getBlock(), parkingSpotDto.getBlock())){
+            if (parkingSpotRepository.existsByApartmentAndBlock(parkingSpotDto.getApartment(), parkingSpotDto.getBlock())) {
+                throw new EntityConflitException("Parking Spot Car already registered for this apartment/block.");
+            }
         }
-        throw new EntityConflitException("Apartment is already in use.");
+        ParkingSpot parkingSpot = new ParkingSpot();
+        BeanUtils.copyProperties(parkingSpotDto, parkingSpot);
+        parkingSpot.setId(id);
+        parkingSpot.setUpdateDate(LocalDateTime.now());
+        parkingSpot.setRegistrationDate(idCurrent.get().getRegistrationDate());
+        return parkingSpotRepository.save(parkingSpot);
     }
 
     public Page<ParkingSpot> findAll(Pageable pageable) throws EntityBadRequestException {

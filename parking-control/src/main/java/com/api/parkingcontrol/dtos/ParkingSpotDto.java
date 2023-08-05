@@ -9,9 +9,9 @@ import lombok.Data;
 public class ParkingSpotDto {
 
     @NotBlank
-    private int parkingSpotNumber;
+    private String parkingSpotNumber;
     @NotBlank
-    private int apartment;
+    private String apartment;
     @NotBlank
     private String block;
     private User user;

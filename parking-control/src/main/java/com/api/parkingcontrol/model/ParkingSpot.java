@@ -21,9 +21,9 @@ public class ParkingSpot implements Serializable {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
     @Column(nullable = false, unique = true, length = 10)
-    private int parkingSpotNumber;
+    private String parkingSpotNumber;
     @Column(nullable = false, length = 30)
-    private int apartment;
+    private String apartment;
     @Column(nullable = false, length = 30)
     private String block;
     @Column(nullable = false)
